@@ -1,5 +1,10 @@
 import torch
-from torch.utils.cpp_extension import BuildExtension, CppExtension, CUDAExtension, CUDA_HOME
+from torch.utils.cpp_extension import (
+    BuildExtension,
+    CppExtension,
+    CUDAExtension,
+    CUDA_HOME,
+)
 from setuptools import setup, find_packages
 import subprocess
 
@@ -12,7 +17,9 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_cuda_bare_metal_version(cuda_dir):
-    raw_output = subprocess.check_output([cuda_dir + "/bin/nvcc", "-V"], universal_newlines=True)
+    raw_output = subprocess.check_output(
+        [cuda_dir + "/bin/nvcc", "-V"], universal_newlines=True
+    )
     output = raw_output.split()
     release_idx = output.index("release") + 1
     release = output[release_idx].split(".")
@@ -23,14 +30,19 @@ def get_cuda_bare_metal_version(cuda_dir):
 
 
 def check_cuda_torch_binary_vs_bare_metal(cuda_dir):
-    raw_output, bare_metal_major, bare_metal_minor = get_cuda_bare_metal_version(cuda_dir)
+    return  # This skips the minor version check for TABBIE
+    raw_output, bare_metal_major, bare_metal_minor = get_cuda_bare_metal_version(
+        cuda_dir
+    )
     torch_binary_major = torch.version.cuda.split(".")[0]
     torch_binary_minor = torch.version.cuda.split(".")[1]
 
     print("\nCompiling cuda extensions with")
     print(raw_output + "from " + cuda_dir + "/bin\n")
 
-    if (bare_metal_major != torch_binary_major) or (bare_metal_minor != torch_binary_minor):
+    if (bare_metal_major != torch_binary_major) or (
+        bare_metal_minor != torch_binary_minor
+    ):
         raise RuntimeError(
             "Cuda extensions are being compiled with a version of Cuda that does "
             "not match the version used to compile Pytorch binaries.  "
@@ -109,7 +121,8 @@ else:
 if "--cpp_ext" in sys.argv or "--cuda_ext" in sys.argv:
     if TORCH_MAJOR == 0:
         raise RuntimeError(
-            "--cpp_ext requires Pytorch 1.0 or later, " "found torch.__version__ = {}".format(torch.__version__)
+            "--cpp_ext requires Pytorch 1.0 or later, "
+            "found torch.__version__ = {}".format(torch.__version__)
         )
 
 if "--cpp_ext" in sys.argv:
@@ -146,7 +159,9 @@ if "--distributed_adam" in sys.argv:
             include_dirs=[os.path.join(this_dir, "csrc")],
             extra_compile_args={
                 "cxx": ["-O3"] + version_dependent_macros,
-                "nvcc": append_nvcc_threads(["-O3", "--use_fast_math"] + version_dependent_macros),
+                "nvcc": append_nvcc_threads(
+                    ["-O3", "--use_fast_math"] + version_dependent_macros
+                ),
             },
         )
     )
@@ -164,7 +179,9 @@ if "--distributed_lamb" in sys.argv:
             include_dirs=[os.path.join(this_dir, "csrc")],
             extra_compile_args={
                 "cxx": ["-O3"] + version_dependent_macros,
-                "nvcc": append_nvcc_threads(["-O3", "--use_fast_math"] + version_dependent_macros),
+                "nvcc": append_nvcc_threads(
+                    ["-O3", "--use_fast_math"] + version_dependent_macros
+                ),
             },
         )
     )
@@ -224,7 +241,10 @@ if "--cuda_ext" in sys.argv:
             sources=["csrc/layer_norm_cuda.cpp", "csrc/layer_norm_cuda_kernel.cu"],
             extra_compile_args={
                 "cxx": ["-O3"] + version_dependent_macros,
-                "nvcc": append_nvcc_threads(["-maxrregcount=50", "-O3", "--use_fast_math"] + version_dependent_macros),
+                "nvcc": append_nvcc_threads(
+                    ["-maxrregcount=50", "-O3", "--use_fast_math"]
+                    + version_dependent_macros
+                ),
             },
         )
     )
@@ -277,7 +297,10 @@ if "--cuda_ext" in sys.argv:
     ext_modules.append(
         CUDAExtension(
             name="scaled_masked_softmax_cuda",
-            sources=["csrc/megatron/scaled_masked_softmax.cpp", "csrc/megatron/scaled_masked_softmax_cuda.cu"],
+            sources=[
+                "csrc/megatron/scaled_masked_softmax.cpp",
+                "csrc/megatron/scaled_masked_softmax_cuda.cu",
+            ],
             include_dirs=[os.path.join(this_dir, "csrc")],
             extra_compile_args={
                 "cxx": ["-O3"] + version_dependent_macros,
@@ -329,7 +352,10 @@ if "--xentropy" in sys.argv:
     ext_modules.append(
         CUDAExtension(
             name="xentropy_cuda",
-            sources=["apex/contrib/csrc/xentropy/interface.cpp", "apex/contrib/csrc/xentropy/xentropy_kernel.cu"],
+            sources=[
+                "apex/contrib/csrc/xentropy/interface.cpp",
+                "apex/contrib/csrc/xentropy/xentropy_kernel.cu",
+            ],
             include_dirs=[os.path.join(this_dir, "csrc")],
             extra_compile_args={
                 "cxx": ["-O3"] + version_dependent_macros,
@@ -351,7 +377,9 @@ if "--deprecated_fused_adam" in sys.argv:
             include_dirs=[os.path.join(this_dir, "csrc")],
             extra_compile_args={
                 "cxx": ["-O3"] + version_dependent_macros,
-                "nvcc": append_nvcc_threads(["-O3", "--use_fast_math"] + version_dependent_macros),
+                "nvcc": append_nvcc_threads(
+                    ["-O3", "--use_fast_math"] + version_dependent_macros
+                ),
             },
         )
     )
@@ -370,7 +398,9 @@ if "--deprecated_fused_lamb" in sys.argv:
             include_dirs=[os.path.join(this_dir, "csrc")],
             extra_compile_args={
                 "cxx": ["-O3"] + version_dependent_macros,
-                "nvcc": append_nvcc_threads(["-O3", "--use_fast_math"] + version_dependent_macros),
+                "nvcc": append_nvcc_threads(
+                    ["-O3", "--use_fast_math"] + version_dependent_macros
+                ),
             },
         )
     )
@@ -489,7 +519,15 @@ if "--fast_multihead_attn" in sys.argv:
         cc_flag.append("-gencode")
         cc_flag.append("arch=compute_86,code=sm_86")
 
-    subprocess.run(["git", "submodule", "update", "--init", "apex/contrib/csrc/multihead_attn/cutlass"])
+    subprocess.run(
+        [
+            "git",
+            "submodule",
+            "update",
+            "--init",
+            "apex/contrib/csrc/multihead_attn/cutlass",
+        ]
+    )
     ext_modules.append(
         CUDAExtension(
             name="fast_multihead_attn",
@@ -522,7 +560,9 @@ if "--fast_multihead_attn" in sys.argv:
                     + cc_flag
                 ),
             },
-            include_dirs=[os.path.join(this_dir, "apex/contrib/csrc/multihead_attn/cutlass")],
+            include_dirs=[
+                os.path.join(this_dir, "apex/contrib/csrc/multihead_attn/cutlass")
+            ],
         )
     )
 
@@ -540,7 +580,10 @@ if "--transducer" in sys.argv:
                 "cxx": ["-O3"] + version_dependent_macros,
                 "nvcc": append_nvcc_threads(["-O3"] + version_dependent_macros),
             },
-            include_dirs=[os.path.join(this_dir, "csrc"), os.path.join(this_dir, "apex/contrib/csrc/multihead_attn")],
+            include_dirs=[
+                os.path.join(this_dir, "csrc"),
+                os.path.join(this_dir, "apex/contrib/csrc/multihead_attn"),
+            ],
         )
     )
     ext_modules.append(
@@ -561,13 +604,19 @@ if "--transducer" in sys.argv:
 if "--fast_bottleneck" in sys.argv:
     sys.argv.remove("--fast_bottleneck")
     raise_if_cuda_home_none("--fast_bottleneck")
-    subprocess.run(["git", "submodule", "update", "--init", "apex/contrib/csrc/cudnn-frontend/"])
+    subprocess.run(
+        ["git", "submodule", "update", "--init", "apex/contrib/csrc/cudnn-frontend/"]
+    )
     ext_modules.append(
         CUDAExtension(
             name="fast_bottleneck",
             sources=["apex/contrib/csrc/bottleneck/bottleneck.cpp"],
-            include_dirs=[os.path.join(this_dir, "apex/contrib/csrc/cudnn-frontend/include")],
-            extra_compile_args={"cxx": ["-O3"] + version_dependent_macros + generator_flag},
+            include_dirs=[
+                os.path.join(this_dir, "apex/contrib/csrc/cudnn-frontend/include")
+            ],
+            extra_compile_args={
+                "cxx": ["-O3"] + version_dependent_macros + generator_flag
+            },
         )
     )
 
@@ -576,7 +625,17 @@ setup(
     name="apex",
     version="0.1",
     packages=find_packages(
-        exclude=("build", "csrc", "include", "tests", "dist", "docs", "tests", "examples", "apex.egg-info",)
+        exclude=(
+            "build",
+            "csrc",
+            "include",
+            "tests",
+            "dist",
+            "docs",
+            "tests",
+            "examples",
+            "apex.egg-info",
+        )
     ),
     description="PyTorch Extensions written by NVIDIA",
     ext_modules=ext_modules,
